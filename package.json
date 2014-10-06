@@ -1,0 +1,25 @@
+{
+  "name": "oidc-auth-response-validator",
+  "version": "0.1.0",
+  "description": "OIDC Authentication Response Validator (Implicit Flow)",
+  "main": "index.js",
+  "dependencies": {
+    "grunt": "^0.4.5"
+  },
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-contrib-uglify": "^0.6.0",
+    "numero-grunt-configure":"0.0.2",
+    "numero-grunt-tasks": "1.0.15",
+    "grunt-contrib-jasmine": "=0.7.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "oidc",
+    "id_token"
+  ],
+  "author": "numero",
+  "license": "MIT"
+}

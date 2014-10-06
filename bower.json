@@ -1,0 +1,25 @@
+{
+  "name": "oidc-auth-response-validator",
+  "version": "0.1.0",
+  "authors": [
+    "numero"
+  ],
+  "description": "OIDC Authentication Response Validator",
+  "keywords": [
+    "oidc",
+    "id_token"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jsrsasign": "~4.7.0",
+    "jsjws": "~3.0.2"
+  }
+}
