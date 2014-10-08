@@ -1,0 +1,88 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>OIDC Authentication Response Validator Example</title>
+
+  <!-- include source files here... -->
+  <script type="text/javascript" src="src/assets/lib/jsrsasign/js/jsrsasign-4.7.0-all-min.js"></script>
+  <script type="text/javascript" src="src/assets/lib/jsjws/js/json-sans-eval.js"></script>
+  <script type="text/javascript" src="src/assets/lib/jsjws/js/jws-3.0.js"></script>
+  <script type="text/javascript" src="src/assets/lib/jquery/js/jquery.min.js"></script>
+  
+  <script type="text/javascript" src="src/assets/lib/jsjws.patch.js"></script>
+  <script type="text/javascript" src="src/assets/oAuthClient.js"></script>
+  <script type="text/javascript" src="src/assets/OIDCAuthenticationResponseValidator.js"></script>
+</head>
+
+<body>
+    
+    <script>
+        <!--//
+        
+        //Redirect to login on vouch.
+        $(function(){
+            
+            OIDCDiscoveryFactory("https://saserver1/vouch")
+            .then(JKWSCertificateFactory)
+            .then(OAuthClientFactory)
+            .then(function(client){
+                      
+                //Make sure we have a record of the request sent to the Authorization Server
+				if (typeof localStorage['OAuthRequestDetails'] !== 'undefined') {
+					try {
+						var request = JSON.parse(localStorage['OAuthRequestDetails']);
+					} catch(e) {
+						var request = null;
+					}
+				}
+				
+			
+				OIDCAuthentication.ResponseValidatorFactory(request, location.hash).then(function(rV){
+					return rV.validate(client.certificate);
+				}).then(function(valid){
+					debugger;
+					//fulfilled
+					//Authentication Response is Valid
+					alert("Smashing");
+					//redirect to the secure resource?
+				}).catch(function(err){
+					//rejected
+					debugger;
+					
+					localStorage.removeItem('OAuthRequestDetails'); // Clear the stored data out (stops replay attacks)
+				
+					//Did validation fail because of missing parameters
+					if (err instanceof OIDCAuthentication.ResponseValidator.Errors.MissingParameterError) {
+						//There was no request so we never made a request before...
+						if (err.parameter == "request") {
+							var req = client.createImplicitFlowRequest(
+								"ssp",
+								"http://saserver1:3000/implicit_flow_reponse.html",
+								'openid profile ssp', 'id_token token');
+							localStorage['OAuthRequestDetails'] = JSON.stringify(req);
+							window.location = req.url;	
+						}
+						
+						if (err.parameter == "response") {
+							console.log(err.stack);	
+						}
+					}
+					
+					
+					
+					console.log(err.name);
+					console.log(err.message);
+					console.log(err.stack);
+				});
+            }).catch(function(err) {
+				console.log(err);
+			});
+            
+            
+        });
+		//-->
+    </script>
+    
+</body>
+</html>

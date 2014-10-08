@@ -1,2 +1,5 @@
 bower_components
 node_modules
+.grunt
+_SpecRunner.html
+source/src/examples/app/public/src/*

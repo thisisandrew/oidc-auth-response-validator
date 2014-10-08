@@ -19,7 +19,19 @@
     "tests"
   ],
   "dependencies": {
-    "jsrsasign": "~4.7.0",
-    "jsjws": "~3.0.2"
+    "jsrsasign": "4.7.0",
+    "jsjws": "3.0.2",
+    "jquery": "1.11.1"
+  },
+  "exportsOverride": {
+    "jsjws": {
+        "js": ["jws-3.0.js", "**/json-sans-eval.js"]
+    },
+    "jsrsasign": {
+        "js": "jsrsasign-4.7.0-all-min.js"
+    },
+    "jquery": {
+      "js": ["dist/jquery.min.js", "dist/jquery.min.map"]
+    }
   }
 }
