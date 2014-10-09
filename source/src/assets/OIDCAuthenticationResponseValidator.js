@@ -10,19 +10,15 @@
  * ☑ Implicit Flow (Response Type 'id_token token' OR 'id_token') see http://openid.net/specs/openid-connect-core-1_0.html#ImplicitAuthResponseValidation
  * ☒ Hybrid Flow (Response Type contains 'code' AND ('id_token' OR 'token' OR both)) see http://openid.net/specs/openid-connect-core-1_0.html#HybridAuthResponseValidation
  *
- * So right now this is only good for client side apps but may be enhanced
- * for server side js apps to handle Authorization Code Flow and Hybrid FLow
  *
  * @depends
  * jquery ^1.10.0
- * jsjws
- * jsrsasign
+ * jsjws 3.0.0
+ * jsrsasign 1.7.0
  *
- * @uses
- * promise ~6.0.0
  */
 
-var OIDCAuthentication = OIDCAuthentication || {}; 
+var OIDCAuthentication = OIDCAuthentication || {};
 
 /**
  * @param request must contain a response_type e.g. { response_type: 'code'}
@@ -90,7 +86,7 @@ OIDCAuthentication.ResponseValidator = function(request, response){
               && (this.request.response_type.indexOf("id_token") > -1 || this.request.response_type.indexOf("token") > -1)) {
         this.flow = new OIDCAuthentication.Flows.Hybrid(this);
     } else {
-        throw new OIDCAuthentication.ResponseValidator.Errors.UnsupportedFlowError();
+        throw new OIDCAuthentication.ResponseValidator.Errors.InvalidResponseTypeError();
     }
 
     /**
@@ -98,13 +94,8 @@ OIDCAuthentication.ResponseValidator = function(request, response){
      * You can get the jwks_uri from your AUthorization Servers .well-known/openid-configuration endpoint - http://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig
      */
     this.validate = function(cert){
-        return this.flow.validate(this.response, cert).then(function(valid){
-            debugger;
-            return valid;
-        }).catch(function(e){
-            debugger;
-            throw e;
-        });
+        //gets and return a status object
+        return this.flow.validate(this.response, cert);
     };
 };
 
@@ -128,13 +119,25 @@ OIDCAuthentication.Flows = {
     
     //Supported
     Implicit: function(responseValidator){
+        var status = {};
         this.rV = responseValidator;
         
         this.validate = function (response, cert) {
-            if(this.rV.verifyState() && this.rV.hasProperty('id_token')){
+            if(this.rV.hasProperty('state') && this.rV.hasProperty('token_type') && this.rV.hasProperty('id_token') && this.rV.hasProperty('access_token') && this.rV.verifyState()){
                 try {
-                    var payload = this.rV.verifyTokenSignatureAndGetPayload(this.rV.response.id_token, cert);
-                    return payload;
+                    //Implicit flow requires a number of steps to check the id_token
+                    //http://tools.ietf.org/html/rfc6749#section-4.2.2
+                    
+                    if(this.rV.verifyTokenSignature(this.rV.response.id_token, cert)) {
+                        status.signatureVerified = true;
+                        
+                        var id_token_payload = this.rV.getPayload(this.rV.response.id_token);
+                        
+                        
+                    } else {
+                        status.signatureVerified = false;
+                    }
+                    return status;
                  } catch(e) {
                     throw e;
                  }
@@ -153,41 +156,40 @@ OIDCAuthentication.Flows = {
 };
 
 OIDCAuthentication.ResponseValidator.prototype.hasProperty = function(propertyName){
-    return this.response.hasOwnProperty(propertyName);
+    if(this.response.hasOwnProperty(propertyName)){
+        return true;    
+    } else {
+        throw new OIDCAuthentication.ResponseValidator.Errors.MissingPropertyError(propertyName);
+    }
 };
 
-OIDCAuthentication.ResponseValidator.prototype.tokenHasClaim = function(claimName){
+OIDCAuthentication.ResponseValidator.prototype.tokenHasClaim = function(tokenPayload, claimName){
     
     //return this.response.hasOwnProperty(propertyName);
 };
 
 OIDCAuthentication.ResponseValidator.prototype.verifyState = function(){
-    if (this.hasProperty('state')) {
-        if (this.request.state === this.response.state) {
-            return true;
-        }
+    if (this.request.state === this.response.state) {
+        return true;
     } else {
-        throw new OIDCAuthentication.ResponseValidator.Errors.MissingProperty("state");
+        throw new OIDCAuthentication.ResponseValidator.Errors.InvalidProperty("state");
     }
 };
 
 OIDCAuthentication.ResponseValidator.prototype.verifyNonce = function(){
-    if (this.hasProperty('nonce')) {
-        if (this.request.nonce === this.response.nonce) {
-            return true;
-        }
+    if (this.request.nonce === this.response.nonce) {
+        return true;
     } else {
-        throw new OIDCAuthentication.ResponseValidator.Errors.MissingProperty("nonce");
+        throw new OIDCAuthentication.ResponseValidator.Errors.InvalidProperty("nonce");
     }
 };
 
 
 //The cert is the public key from the OIDC jwks_uri endpoint at keys[0].x5c[0];
-OIDCAuthentication.ResponseValidator.prototype.verifyTokenSignatureAndGetPayload = function(token, cert){
-    var verfd = false;
-    var tokenPayload = {};
-    
+//Token is passed in as it could be *any* token id_token, access_token, unicorn_token...
+OIDCAuthentication.ResponseValidator.prototype.verifyTokenSignature = function(token, cert){
     try {
+        //Convert raw base64 encoded PEM to RSAKey
         var hCert = X509.pemToHex(cert);
         var a = X509.getPublicKeyHexArrayFromCertHex(hCert);
         var rsa = new RSAKey();
@@ -196,21 +198,37 @@ OIDCAuthentication.ResponseValidator.prototype.verifyTokenSignatureAndGetPayload
         result = KJUR.jws.JWS.verify(token, rsa);
         if (result) {
             //Signature is valid
-            verfd = true;
-            var jws = new KJUR.jws.JWS();
-            
-            patchJWS(jws); //Overrides the method 'parseJWS' on the instance of KJUR.jws.JWS
-            
-            jws.parseJWS(token, false);
-        
-            var tokenPayload = JSON.parse(jws.parsedJWS.payloadS);
-            return { verified: verfd, payload: tokenPayload};
+            return true;
         } else {
-             return { verified: verfd, payload: {} };
+             return false;
         }
     } catch(e) {
          throw new OIDCAuthentication.ResponseValidator.Errors.TokenSignatureValidationError(e);
     }
+};
+
+//Get the parsed token so we can inspect/check the payload
+//Token is passed in as it could be *any* token id_token, access_token, unicorn_token...
+OIDCAuthentication.ResponseValidator.prototype.getPayload = function(token){
+    var tokenPayload = {};
+    var jws = new KJUR.jws.JWS();
+            
+    patchJWS(jws); //Overrides the method 'parseJWS' on the instance of KJUR.jws.JWS
+    
+    jws.parseJWS(token, false);
+
+    try {
+        tokenPayload = JSON.parse(jws.parsedJWS.payloadS);
+    } catch(e) {
+        throw new TokenPayloadInvalidError(e);
+    }
+    
+    return tokenPayload;
+}
+
+//Verify the salient parts of the payload
+OIDCAuthentication.ResponseValidator.prototype.verifyPayload = function(payload){
+    
 };
 
 
@@ -232,21 +250,36 @@ OIDCAuthentication.ResponseValidator.Errors = {
         this.property = prop;
     },
     
+    InvalidPropertyError: function(prop){
+        this.stack = new Error().stack;
+        this.name = "InvalidPropertyError";
+        this.message = "invalid property: " + prop;
+        this.property = prop;
+    },
+    
     InvalidResponseTypeError: function(){
         this.stack = new Error().stack;
         this.name = "InvalidResponseTypeError";
         this.message = "invalid reponse_type";
     },
     
+    /*
     InvalidTokenSignatureError: function(){
         this.stack = new Error().stack;
         this.name = "InvalidTokenSignatureError";
         this.message = "invalid token signature";
     },
+    */
     
     TokenSignatureValidationError: function(e){
         this.name = "TokenSignatureValidationError";
         this.message = "token signature validation error in jws lib";
+        this.stack = e.stack;
+    },
+    
+    TokenPayloadInvalidError: function(e){
+        this.name = "TokenPayloadInvalidError";
+        this.message = "token payload is invalid";
         this.stack = e.stack;
     },
     

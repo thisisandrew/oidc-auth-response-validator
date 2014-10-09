@@ -27,7 +27,8 @@ module.exports = function(grunt) {
                 "source/src/assets/lib/jsrsasign/js/jsrsasign-4.7.0-all-min.js",
                 "source/src/assets/lib/jsjws/js/json-sans-eval.js",
                 "source/src/assets/lib/jsjws/js/jws-3.0.js",
-                "source/src/assets/lib/jquery/js/jquery.min.js"
+                "source/src/assets/lib/jquery/js/jquery.min.js",
+                "source/src/assets/lib/jsjws.patch.js",
             ],
             helpers: 'source/tests/unit/helpers/*_helper.js'
           }
