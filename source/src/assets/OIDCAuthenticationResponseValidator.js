@@ -123,24 +123,33 @@ OIDCAuthentication.Flows = {
         this.rV = responseValidator;
         
         this.validate = function (response, cert) {
-            if(this.rV.hasProperty('state') && this.rV.hasProperty('token_type') && this.rV.hasProperty('id_token') && this.rV.hasProperty('access_token') && this.rV.verifyState()){
-                try {
-                    //Implicit flow requires a number of steps to check the id_token
-                    //http://tools.ietf.org/html/rfc6749#section-4.2.2
-                    
-                    if(this.rV.verifyTokenSignature(this.rV.response.id_token, cert)) {
-                        status.signatureVerified = true;
-                        
-                        var id_token_payload = this.rV.getPayload(this.rV.response.id_token);
-                        
-                        
-                    } else {
-                        status.signatureVerified = false;
-                    }
-                    return status;
-                 } catch(e) {
-                    throw e;
-                 }
+            //Implicit flow requires a number of steps to check the id_token
+            //http://tools.ietf.org/html/rfc6749#section-4.2.2
+            
+            //Check the response contains the basics
+            if(this.rV.hasProperty('state')
+               && this.rV.hasProperty('token_type')
+               && this.rV.hasProperty('id_token')
+               && this.rV.hasProperty('access_token')
+               && this.rV.verifyState()
+            ){
+                //Verify the payload of the id_token
+                var id_token_payload = this.rV.getPayload(this.rV.response.id_token);
+                if (this.rV.request.oidc_conf.issuer == this.rV.getClaim(id_token_payload, 'iss')
+                    && this.rV.request.client_id == this.rV.getClaim(id_token_payload, 'aud')
+                ) {
+                    //Let's have a stab at that JWS signature then
+                    try {
+                        if(this.rV.verifyTokenSignature(this.rV.response.id_token, cert)) {
+                            status.signatureVerified = true;
+                        } else {
+                            status.signatureVerified = false;
+                        }
+                        return status;
+                     } catch(e) {
+                        throw e;
+                     }
+                }
             }
             
             return false;
@@ -156,16 +165,20 @@ OIDCAuthentication.Flows = {
 };
 
 OIDCAuthentication.ResponseValidator.prototype.hasProperty = function(propertyName){
-    if(this.response.hasOwnProperty(propertyName)){
+    if(this.response.hasOwnProperty(propertyName) && typeof this.response[propertyName] !== 'undefined'){
         return true;    
     } else {
         throw new OIDCAuthentication.ResponseValidator.Errors.MissingPropertyError(propertyName);
     }
 };
 
-OIDCAuthentication.ResponseValidator.prototype.tokenHasClaim = function(tokenPayload, claimName){
+OIDCAuthentication.ResponseValidator.prototype.getClaim = function(tokenPayload, claimName){
+    if (tokenPayload.hasOwnProperty(claimName) && typeof tokenPayload[claimName] !== 'undefined') {
+        return tokenPayload[claimName];
+    } else {
+        throw new OIDCAuthentication.ResponseValidator.Errors.MissingClaimError(claimName);
+    }
     
-    //return this.response.hasOwnProperty(propertyName);
 };
 
 OIDCAuthentication.ResponseValidator.prototype.verifyState = function(){
@@ -235,58 +248,50 @@ OIDCAuthentication.ResponseValidator.prototype.verifyPayload = function(payload)
 /**
  * Error Types
  */
+
+OIDCAuthentication.ResponseValidator.Error = function (name, message) {
+  this.name = name;
+  this.message = message || 'Default Message';
+}
+OIDCAuthentication.ResponseValidator.Error.prototype = new Error();
+OIDCAuthentication.ResponseValidator.Error.prototype.constructor = OIDCAuthentication.ResponseValidator.Error;
+
+
 OIDCAuthentication.ResponseValidator.Errors = {
-    MissingParameterError: function(param){
-        this.stack = new Error().stack;
-        this.name = "MissingParameterError";
-        this.message = "missing parameter: " + param;
-        this.parameter = param;
+    MissingParameterError: function MissingParameterError(param){
+        return new OIDCAuthentication.ResponseValidator.Error(this.constructor.name, "missing parameter: " + param);
     },
     
-    MissingPropertyError: function(prop){
-        this.stack = new Error().stack;
-        this.name = "MissingPropertyError";
-        this.message = "missing property: " + prop;
-        this.property = prop;
+    MissingPropertyError: function MissingPropertyError(prop){
+        return new OIDCAuthentication.ResponseValidator.Error(this.constructor.name, "missing property: " + prop);
     },
     
-    InvalidPropertyError: function(prop){
-        this.stack = new Error().stack;
-        this.name = "InvalidPropertyError";
-        this.message = "invalid property: " + prop;
-        this.property = prop;
+    InvalidPropertyError: function InvalidPropertyError(prop){
+        return new OIDCAuthentication.ResponseValidator.Error(this.constructor.name, "invalid property: " + prop);
     },
     
-    InvalidResponseTypeError: function(){
-        this.stack = new Error().stack;
-        this.name = "InvalidResponseTypeError";
-        this.message = "invalid reponse_type";
+    InvalidResponseTypeError: function InvalidResponseTypeError(){
+        return new OIDCAuthentication.ResponseValidator.Error(this.constructor.name, "invalid reponse_type");
     },
     
-    /*
-    InvalidTokenSignatureError: function(){
-        this.stack = new Error().stack;
-        this.name = "InvalidTokenSignatureError";
-        this.message = "invalid token signature";
-    },
-    */
-    
-    TokenSignatureValidationError: function(e){
-        this.name = "TokenSignatureValidationError";
-        this.message = "token signature validation error in jws lib";
-        this.stack = e.stack;
+    TokenSignatureValidationError: function TokenSignatureValidationError(e){
+        return new OIDCAuthentication.ResponseValidator.Error(this.constructor.name, "token signature validation error in jws lib");
     },
     
-    TokenPayloadInvalidError: function(e){
-        this.name = "TokenPayloadInvalidError";
-        this.message = "token payload is invalid";
-        this.stack = e.stack;
+    TokenPayloadInvalidError: function TokenPayloadInvalidError(e){
+        return new OIDCAuthentication.ResponseValidator.Error(this.constructor.name, "token payload is invalid");
     },
     
+    MissingClaimError: function MissingClaimError(claim){
+        return new OIDCAuthentication.ResponseValidator.Error(this.constructor.name, "missing claim: " + claim);
+    },
+    
+    InvalidClaimError: function InvalidClaimError(claim){
+        return new OIDCAuthentication.ResponseValidator.Error(this.constructor.name, "invalid claim: " + claim);
+    },
         
-    NotYetImplemented: function(){
-        this.stack = new Error().stack;
-        this.message = "not yet implemented";
+    NotYetImplemented: function NotYetImplemented(){
+        return new OIDCAuthentication.ResponseValidator.Error(this.constructor.name, "not yet implemented");
     }
 }
 

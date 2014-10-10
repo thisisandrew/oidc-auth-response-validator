@@ -7,9 +7,9 @@ var FIXTURE = FIXTURE || {};
     /**
      * An oidc configuration fixture
      */
-    var oidc = {};
+    var oidc_conf = {};
     
-    oidc.conf = {
+    oidc_conf = {
         issuer: "https://www.thisisnumero.com/vouch",
         jwks_uri: "https://saserver1/vouch/.well-known/jwks",
         authorization_endpoint: "https://saserver1/vouch/connect/authorize",
@@ -48,8 +48,8 @@ var FIXTURE = FIXTURE || {};
         id_token_signing_alg_values_supported: "RS256"
     };
     
-    oidc.client_certificate = "MIIDCzCCAfegAwIBAgIQnxu3IVjoELtKf4qVckvRKTAJBgUrDgMCHQUAMBUxEzARBgNVBAMTCmlkc3J2M3Rlc3QwHhcNMTQwOTE1MTEzMTQ0WhcNMTYwOTE0MjMwMDAwWjAVMRMwEQYDVQQDEwppZHNydjN0ZXN0MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyDXZz13Cq503ek3Y82Fd2nMf5AGvR0YoHymGuGitaVvfV3Quam7jSELuqe8UFSjn8kPG6Rmm+qVSFTj70lKKn+w6qQUEOADmNzYY9MqfZKOuopswllF+uYhw7zhAb9v9XqfNWGCbRb4vIGV5GhfetIsuL6vIMRdLR1aQWeiZyz2yIaiVFKh+GyR0bIYWswvSptN5A1fRSuvqVnVYYWhhtDla/4DV1+Gr+yBt0f1zD0M0zZjX2o7Vj8gFN0gDqhSIRHq1QZ9CHEy3gpB53zeOh+rhSMdRpvNtmJ7NJpIlCtsXyO48jPFrxU6n6mt+SmeWCtO86MAgwUIVG1wdTLqVewIDAQABo18wXTATBgNVHSUEDDAKBggrBgEFBQcDAjBGBgNVHQEEPzA9gBBF9TrzBSBzqtu6JmPqM5zjoRcwFTETMBEGA1UEAxMKaWRzcnYzdGVzdIIQnxu3IVjoELtKf4qVckvRKTAJBgUrDgMCHQUAA4IBAQAdWI/r8UgKuk/IglEB9BkU4ZuowK40vfap0FH/TrHKGwTbQj3f4nT066w59a6FyLvGNoDxDd6enAlN3inV6lusK364ydEWe8wpDO2AZC3Dfh5k6qaWyVcWoOH2EA6g6fikIlEMNPHo3pDyP3551APBsvaT+Sx896Po2w1xJvgtm2lfOzhX3jZCcVXN0lDXWJM7f5TCiQ9yw6LW1aZPfRcWC3H7YRQ9ZIK2e2kqQMFBWnhwI25WtNQM/Y23zHXqE8euxmgMhzIo6TiXww1D0etFhXi/3mbtLniIcj14kNR6hrz18z6p3pw7Yl7Be5yS6Iv2a3Wj4Xah0b33O5wrrh7X";
-    FIXTURE.oidc = oidc;
+    oidc_conf.client_certificate = "MIIDCzCCAfegAwIBAgIQnxu3IVjoELtKf4qVckvRKTAJBgUrDgMCHQUAMBUxEzARBgNVBAMTCmlkc3J2M3Rlc3QwHhcNMTQwOTE1MTEzMTQ0WhcNMTYwOTE0MjMwMDAwWjAVMRMwEQYDVQQDEwppZHNydjN0ZXN0MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyDXZz13Cq503ek3Y82Fd2nMf5AGvR0YoHymGuGitaVvfV3Quam7jSELuqe8UFSjn8kPG6Rmm+qVSFTj70lKKn+w6qQUEOADmNzYY9MqfZKOuopswllF+uYhw7zhAb9v9XqfNWGCbRb4vIGV5GhfetIsuL6vIMRdLR1aQWeiZyz2yIaiVFKh+GyR0bIYWswvSptN5A1fRSuvqVnVYYWhhtDla/4DV1+Gr+yBt0f1zD0M0zZjX2o7Vj8gFN0gDqhSIRHq1QZ9CHEy3gpB53zeOh+rhSMdRpvNtmJ7NJpIlCtsXyO48jPFrxU6n6mt+SmeWCtO86MAgwUIVG1wdTLqVewIDAQABo18wXTATBgNVHSUEDDAKBggrBgEFBQcDAjBGBgNVHQEEPzA9gBBF9TrzBSBzqtu6JmPqM5zjoRcwFTETMBEGA1UEAxMKaWRzcnYzdGVzdIIQnxu3IVjoELtKf4qVckvRKTAJBgUrDgMCHQUAA4IBAQAdWI/r8UgKuk/IglEB9BkU4ZuowK40vfap0FH/TrHKGwTbQj3f4nT066w59a6FyLvGNoDxDd6enAlN3inV6lusK364ydEWe8wpDO2AZC3Dfh5k6qaWyVcWoOH2EA6g6fikIlEMNPHo3pDyP3551APBsvaT+Sx896Po2w1xJvgtm2lfOzhX3jZCcVXN0lDXWJM7f5TCiQ9yw6LW1aZPfRcWC3H7YRQ9ZIK2e2kqQMFBWnhwI25WtNQM/Y23zHXqE8euxmgMhzIo6TiXww1D0etFhXi/3mbtLniIcj14kNR6hrz18z6p3pw7Yl7Be5yS6Iv2a3Wj4Xah0b33O5wrrh7X";
+    //FIXTURE.oidc = oidc;
 
 
     /**
@@ -57,23 +57,29 @@ var FIXTURE = FIXTURE || {};
      */
     var request = {
         url: "https:\/\/saserver1\/vouch\/connect\/authorize?client_id=ssp&redirect_uri=http%3A%2F%2Fsaserver1%3A3000%2Fimplicit_flow_reponse.html&response_type=id_token%20token&scope=openid%20profile%20ssp&state=6909352776125815&nonce=13542218577036975",
+        client_id: "ssp",
         state: "6909352776125815",
         nonce: "13542218577036975",
-        response_type: "id_token token"    
+        response_type: "id_token token",
+        oidc_conf: oidc_conf
     };
     
     request.good = {
         url: request.url,
+        client_id: request.client_id,
         state: request.state,
         nonce: request.nonce,
-        response_type: request.response_type
+        response_type: request.response_type,
+        oidc_conf: oidc_conf
     };
     
     request.bad = {
         url: "NEVER_TESTED",
+        client_id: "BAD_CLIENT_ID",
         state: "BAD_STATE",
         nonce: "BAD_NONCE",
-        response_type: "BAD_RESPONSE_TYPE"
+        response_type: "BAD_RESPONSE_TYPE",
+        oidc_conf: oidc_conf
     }
     FIXTURE.request = request;
 
@@ -83,7 +89,7 @@ var FIXTURE = FIXTURE || {};
      * Signed with the above oidc.client_certificate
      * Not from the below response
      */
-    var id_token =           "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Imo5T05PRUdOdG5DcGpIZ3FxWk1GM1daSTFfSSJ9.eyJpc3MiOiJodHRwczovL3d3dy50aGlzaXNudW1lcm8uY29tL3ZvdWNoIiwiYXVkIjoic3NwIiwibmJmIjoxNDEyNzUyOTEzLCJleHAiOjE0MTI3NTMyNzMsIm5vbmNlIjoiMzM2NTgzMTQyNTExNjg4OTYiLCJpYXQiOjE0MTI3NTI5MTQsImF0X2hhc2giOiJibUtneVFhMmxjWi01TUhreU9TZVNRIiwic3ViIjoiZDQ0ZDRlMDAtZDkxNC00MDBhLWE5N2QtYjlkZDBhNTBhYTliIiwiYW1yIjoicGFzc3dvcmQiLCJhdXRoX3RpbWUiOjE0MTI3NTI4NTgsImlkcCI6Imlkc3J2IiwibmFtZSI6IkRlZmF1bHQgQWRtaW5pc3RyYXRvciJ9.uerkTaDioK0Bd3XsGszjS8bVKnnCqk44lNd556btvelhPVa_xKxcuDuQ_vhC3eDcwKjzDTLWpKrkhJC62wLRnu1nsD8m-895hYasQROTLXBqfuXHJR0UZQ7hcoEkIgyid5j5mcVub0O7p0-Bh_VrOuszNexlTBTSgcUFNjGWGT3DKFqxdYVwFrNErtDx1TwKFoK3jdPa3gU7vhV1vbw2NY2KsHpm1nDY2muRtvi85Mq4G5KzAb1n6DGqo_msj8vFK5VFV6kKA9mPk2cT7Azfdmb3KpLJ-G-bfJOSxQmhNr6etLIN_0qdcyFEBryRjjAc-BeX3zayyTQ7-neeHdxrQw";
+    var id_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Imo5T05PRUdOdG5DcGpIZ3FxWk1GM1daSTFfSSJ9.eyJpc3MiOiJodHRwczovL3d3dy50aGlzaXNudW1lcm8uY29tL3ZvdWNoIiwiYXVkIjoic3NwIiwibmJmIjoxNDEyNzUyOTEzLCJleHAiOjE0MTI3NTMyNzMsIm5vbmNlIjoiMzM2NTgzMTQyNTExNjg4OTYiLCJpYXQiOjE0MTI3NTI5MTQsImF0X2hhc2giOiJibUtneVFhMmxjWi01TUhreU9TZVNRIiwic3ViIjoiZDQ0ZDRlMDAtZDkxNC00MDBhLWE5N2QtYjlkZDBhNTBhYTliIiwiYW1yIjoicGFzc3dvcmQiLCJhdXRoX3RpbWUiOjE0MTI3NTI4NTgsImlkcCI6Imlkc3J2IiwibmFtZSI6IkRlZmF1bHQgQWRtaW5pc3RyYXRvciJ9.uerkTaDioK0Bd3XsGszjS8bVKnnCqk44lNd556btvelhPVa_xKxcuDuQ_vhC3eDcwKjzDTLWpKrkhJC62wLRnu1nsD8m-895hYasQROTLXBqfuXHJR0UZQ7hcoEkIgyid5j5mcVub0O7p0-Bh_VrOuszNexlTBTSgcUFNjGWGT3DKFqxdYVwFrNErtDx1TwKFoK3jdPa3gU7vhV1vbw2NY2KsHpm1nDY2muRtvi85Mq4G5KzAb1n6DGqo_msj8vFK5VFV6kKA9mPk2cT7Azfdmb3KpLJ-G-bfJOSxQmhNr6etLIN_0qdcyFEBryRjjAc-BeX3zayyTQ7-neeHdxrQw";
     FIXTURE.id_token = id_token;
     
     

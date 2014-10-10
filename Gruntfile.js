@@ -17,7 +17,6 @@ module.exports = function(grunt) {
     },
     
     jasmine: {
-        
           src: 'source/src/assets/*.js',
           options: {
             //keepRunner: true,

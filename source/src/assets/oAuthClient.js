@@ -1,6 +1,7 @@
-﻿function OAuthClient(url) {
+﻿function OAuthClient(oidc_conf) {
     "use strict";
-    this.url = url;
+    this.url = oidc_conf.authorization_endpoint;
+    this.oidc_conf = oidc_conf;
 }
 
 OAuthClient.prototype.createImplicitFlowRequest = function (clientid, callback, scope, responseType) {
@@ -24,9 +25,11 @@ OAuthClient.prototype.createImplicitFlowRequest = function (clientid, callback, 
 
     return {
         url: url,
+        client_id: client_id,
         state: state,
         nonce: nonce,
-        response_type: responseType
+        response_type: responseType,
+        oidc_conf: this.oidc_conf
     };
 };
 
@@ -74,12 +77,11 @@ var JKWSCertificateFactory = function(oidc){
     );    
 };
 
-var OAuthClientFactory = function(oidc){
+var OAuthClientFactory = function(oidc_conf){
     "use strict";
     
-    var client = new OAuthClient(oidc.conf.authorization_endpoint);
-    client.discoveredConfiguration = oidc.conf;
-    client.certificate = oidc.client_certificate;
+    var client = new OAuthClient(oidc_conf);
+    client.certificate = oidc_conf.client_certificate;
     
     return client;
 };
