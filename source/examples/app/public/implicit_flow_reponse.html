@@ -1,0 +1,118 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>OIDC Authentication Response Validator Example</title>
+
+  <!-- External Depndencies -->
+  <script type="text/javascript" src="src/ext/jsrsasign/js/jsrsasign-4.7.0-all-min.js"></script>
+  <script type="text/javascript" src="src/ext/jsjws/js/json-sans-eval.js"></script>
+  <script type="text/javascript" src="src/ext/jsjws/js/jws-3.0.min.js"></script>
+  <script type="text/javascript" src="src/ext/jquery/js/jquery.min.js"></script>
+  
+  <!-- Internal Depndencies -->
+  <script type="text/javascript" src="src/lib/promise-6.0.0.js"></script>
+  <script type="text/javascript" src="src/lib/jsjws.patch.js"></script>
+  <script type="text/javascript" src="src/lib/OAuthClient.js"></script>
+  
+  <!-- Source -->
+  <script type="text/javascript" src="src/oidc-authn-validator.js"></script>
+  
+</head>
+
+<body>
+    
+    <script>
+        <!--//
+        $(function(){
+            
+			//Uses the bundled OAuth client to do OIDC Discovery and JWKS discovery
+            OIDCDiscoveryFactory("https://saserver1/vouch")
+            .then(JKWSCertificateFactory)
+            .then(OAuthClientFactory)
+            .then(function(client){
+                      
+                //Make sure we have a record of the request sent to the Authorization Server
+				if (typeof localStorage['OAuthRequestDetails'] !== 'undefined') {
+					try {
+						var request = JSON.parse(localStorage['OAuthRequestDetails']);
+					} catch(e) {
+						var request = null;
+					}
+				}
+				
+				var ERROR;
+				var dom = [];
+				
+				try {
+					var rV = new OIDCAuthentication.ResponseValidator(request, location.hash);
+					var valid = rV.validate(client.oidc.client_certificate);
+				} catch(e) {
+					ERROR = e;
+					
+					localStorage.removeItem('OAuthRequestDetails'); // Clear the stored data out (stops replay attacks)
+				
+					//Did validation fail because of missing parameters
+					if (e instanceof OIDCAuthentication.ResponseValidator.Error) {
+						//There was no request so we never made a request before...
+						if (e.name == "MissingParameterError") {
+							var req = client.createImplicitFlowRequest(
+								"ssp",
+								"http://" + location.hostname + ":" + location.port + "/implicit_flow_reponse.html",
+								'openid profile ssp', 'id_token token');
+							localStorage['OAuthRequestDetails'] = JSON.stringify(req);
+							window.location = req.url;
+						}
+						
+						if (e.name == "TokenExpiredError") {
+							var req = client.createImplicitFlowRequest(
+								"ssp",
+								"http://" + location.hostname + ":" + location.port + "/implicit_flow_reponse.html",
+								'openid profile ssp', 'id_token token');
+							localStorage['OAuthRequestDetails'] = JSON.stringify(req);
+							window.location = req.url;
+							
+							dom.push($("<a>").attr("href", req.url).text("Login"));
+						}
+					}
+				}
+				
+				if (valid) {
+					dom.push($("<p>").text("It went well"));
+					
+					JSON.stringify(rV.getPayload(rV.response.id_token))
+					rV.getPayload(rV.response.access_token);
+					
+					dom.push($("<p>").html("id_token Payload<br /><pre>" + JSON.stringify(rV.getPayload(rV.response.id_token)) + "</pre>"));
+					dom.push($("<p>").html("access_token Payload<br /><pre>" + JSON.stringify(rV.getPayload(rV.response.access_token)) + "</pre>"));
+					
+					var ts_now =  Math.floor(new Date().getTime()/ 1000); //UTC time
+					var exp = rV.getClaim(rV.getPayload(rV.response.id_token), "exp");
+					
+					dom.push($("<p>").html("<b>EXPIRES IN (secs)</b>"));
+					dom.push($("<p>").attr("id", "coutdown").text(exp - ts_now));
+					
+					setInterval(function(){
+						var ts_now =  Math.floor(new Date().getTime()/ 1000); //UTC time
+						$("#coutdown").text(exp - ts_now);
+					}, 1000);
+					
+				} else {
+					dom.push($("<p>").text("It went wrong"));
+					dom.push($("<p>").text(ERROR.name));
+				}
+				
+				$("body").append(dom);
+				
+            }).catch(function(e){
+				dom.push($("<p>").text("It went wrong"));
+				dom.push($("<p>").text(e.message));
+				
+				$("body").append(dom);
+			});
+        });
+		//-->
+    </script>
+    
+</body>
+</html>

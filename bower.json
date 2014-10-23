@@ -25,7 +25,7 @@
   },
   "exportsOverride": {
     "jsjws": {
-        "js": ["jws-3.0.js", "**/json-sans-eval.js"]
+        "js": ["jws-3.0.min.js", "**/json-sans-eval.js"]
     },
     "jsrsasign": {
         "js": "jsrsasign-4.7.0-all-min.js"

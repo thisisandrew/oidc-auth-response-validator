@@ -179,15 +179,46 @@ describe('OIDC Validator Token', function(){
     });
 
     it("id_token 'exp' claim must be after the current time", function(){
-        //Out token has expired so this should be false
-        expect(rV.isTokenExpired(tokenPayload)).toBe(false);
+        //Our token has expired so this should be false
+        expect(rV.isTokenNotExpired(tokenPayload)).toBe(false);
     });
     
     it("validates the 'nonce' claim", function(){
         expect(rV.verifyNonce()).toBe(true);
     });
+    
+    it("validates the 'at_hash' claim", function(){
+        expect(rV.verifyAccessTokenHash(response.id_token, response.access_token)).toBe(true);
+    });
 });
 
+
+//If a valid not expired token is provide in the fixtures then this test will fail and the below will pass
+describe('OIDC Validator fails', function(){
+    var request = FIXTURE.request;
+    var response = FIXTURE.response;
+    
+    var rV;
+    
+    beforeEach(function(){
+        rV = new OIDCAuthentication.ResponseValidator(request.good, response.location_hash());
+    });
+    
+    it("good request and id_token which is expired", function(){
+        expect(function(){
+            rV.validate(request.good.oidc.client_certificate);
+        }).toThrow();
+        
+        try{
+            rV.validate(request.good.oidc.client_certificate);
+        } catch(e) {
+            expect(e instanceof OIDCAuthentication.ResponseValidator.Error).toBe(true);
+            expect(e.name).toBe("TokenExpiredError");
+        }
+    });
+});
+
+//If a valid but expired token is provided in the fixtures then this test will fail and the above will pass
 describe('OIDC Validator validates', function(){
     var request = FIXTURE.request;
     var response = FIXTURE.response;
@@ -198,7 +229,7 @@ describe('OIDC Validator validates', function(){
         rV = new OIDCAuthentication.ResponseValidator(request.good, response.location_hash());
     });
     
-    it("a good request and response", function(){
-        expect(rV.validate(request.good.oidc.conf.client_certificate)).toThrow();
+    it("good request and id_token which is not expired", function(){
+        expect(rV.validate(request.good.oidc.client_certificate)).toBe(true);
     });
 });

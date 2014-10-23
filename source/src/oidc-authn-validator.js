@@ -135,7 +135,7 @@ OIDCAuthentication.Flows = {
             }
             
             if(!this.rV.verifyState(this.rV.request.state, this.rV.response.state)) {
-                throw new OIDCAuthentication.ResponseValidator.Errors.InvalidProperty("state");
+                throw new OIDCAuthentication.ResponseValidator.Errors.InvalidPropertyError("state");
             }
             
             //Get the payload of the id_token
@@ -149,8 +149,8 @@ OIDCAuthentication.Flows = {
                 throw new OIDCAuthentication.ResponseValidator.Errors.InvalidClaimError("aud");
             }
             
-            if(!this.rV.isTokenExpired(id_token_payload)) {
-                throw new OIDCAuthentication.ResponseValidator.Errors.InvalidClaimError("exp");
+            if(!this.rV.isTokenNotExpired(id_token_payload)) {
+                throw new OIDCAuthentication.ResponseValidator.Errors.TokenExpiredError();
             }
             
             //Let's have a stab at that JWS signature then
@@ -165,10 +165,13 @@ OIDCAuthentication.Flows = {
             if(!this.rV.verifyNonce(this.rV.request.nonce, id_token_payload)){
                 throw new OIDCAuthentication.ResponseValidator.Errors.InvalidClaimError("nonce");
             }
-            
-            //Check the at_hash
-            //Determine the hashing algorithm
-            
+          
+            //Check the at_hash claim on the id_token if an access token is present in the response
+            if (typeof this.rV.response.access_token != 'undefined') {
+                if (!this.rV.verifyAccessTokenHash(this.rV.response.id_token, this.rV.response.access_token)) {
+                    throw new OIDCAuthentication.ResponseValidator.Errors.InvalidClaimError("at_hash");
+                }    
+            }
             
             return true;
         };
@@ -238,7 +241,7 @@ OIDCAuthentication.ResponseValidator.prototype.verifyAudience = function(tokenPa
     return false;
 };
 
-OIDCAuthentication.ResponseValidator.prototype.isTokenExpired = function(tokenPayload){
+OIDCAuthentication.ResponseValidator.prototype.isTokenNotExpired = function(tokenPayload){
     var ts_now =  Math.floor(new Date().getTime()/ 1000); //UTC time
     
     if(this.getClaim(tokenPayload, "exp") > ts_now) {
@@ -279,10 +282,38 @@ OIDCAuthentication.ResponseValidator.prototype.verifyTokenSignature = function(t
     var rsa = new RSAKey();
     rsa.setPublic(a[0], a[1]);
     
-    result = KJUR.jws.JWS.verify(token, rsa);
+    var result = KJUR.jws.JWS.verify(token, rsa);
     if (result) {
         return true;
     } 
+    
+    return false;
+};
+
+OIDCAuthentication.ResponseValidator.prototype.verifyAccessTokenHash = function(id_token, access_token){
+    
+    //Depends on the alg
+    var idTokenHeader = this.getHeader(this.response.id_token);
+    var sigAlg = this.getClaim(idTokenHeader, 'alg');
+    
+    if (sigAlg != "RS256" && sigAlg != "RS512" &&
+        sigAlg != "PS256" && sigAlg != "PS512")
+        throw "JWS signature algorithm not supported: " + sigAlg;
+   
+    if (sigAlg.substr(2) == "256") hashAlg = "sha256";
+    if (sigAlg.substr(2) == "512") hashAlg = "sha512";
+    
+    //Hash the access token with the alg    
+    var hash = KJUR.crypto.Util.hashString(access_token, hashAlg);
+    
+    //Base64URL encode leftmost half
+    var at_hash = b64tob64u(hex2b64(hash.substring(0, Math.floor(hash.length / 2))));
+    
+    var idTokenPayload = this.getPayload(id_token);
+    
+    if (this.getClaim(idTokenPayload, "at_hash") == at_hash) {
+        return true;
+    }
     
     return false;
 };
@@ -300,11 +331,30 @@ OIDCAuthentication.ResponseValidator.prototype.getPayload = function(token){
     try {
         tokenPayload = JSON.parse(jws.parsedJWS.payloadS);
     } catch(e) {
-        throw new TokenPayloadInvalidError(e);
+        throw new OIDCAuthentication.ResponseValidator.Errors.TokenPayloadInvalidError(e);
     }
     
     return tokenPayload;
-}
+};
+
+//Get the parsed token so we can inspect/check the payload
+//Token is passed in as it could be *any* token id_token, access_token, unicorn_token...
+OIDCAuthentication.ResponseValidator.prototype.getHeader = function(token){
+    var tokenHeader = {};
+    var jws = new KJUR.jws.JWS();
+            
+    patchJWS(jws); //Overrides the method 'parseJWS' on the instance of KJUR.jws.JWS
+    
+    jws.parseJWS(token, false);
+
+    try {
+        tokenHeader = JSON.parse(jws.parsedJWS.headS);
+    } catch(e) {
+        throw new OIDCAuthentication.ResponseValidator.Errors.TokenHeaderInvalidError(e);
+    }
+    
+    return tokenHeader;
+};
 
 /**
  * Error Types
@@ -312,7 +362,7 @@ OIDCAuthentication.ResponseValidator.prototype.getPayload = function(token){
 OIDCAuthentication.ResponseValidator.Error = function (name, message) {
   this.name = name;
   this.message = message || 'Default Message';
-}
+};
 OIDCAuthentication.ResponseValidator.Error.prototype = new Error();
 OIDCAuthentication.ResponseValidator.Error.prototype.constructor = OIDCAuthentication.ResponseValidator.Error;
 
@@ -342,12 +392,20 @@ OIDCAuthentication.ResponseValidator.Errors = {
         return new OIDCAuthentication.ResponseValidator.Error(this.constructor.name, "token payload is invalid");
     },
     
+    TokenHeaderInvalidError: function TokenHeaderInvalidError(e){
+        return new OIDCAuthentication.ResponseValidator.Error(this.constructor.name, "token header is invalid");
+    },
+    
     MissingClaimError: function MissingClaimError(claim){
         return new OIDCAuthentication.ResponseValidator.Error(this.constructor.name, "missing claim: " + claim);
     },
     
     InvalidClaimError: function InvalidClaimError(claim){
         return new OIDCAuthentication.ResponseValidator.Error(this.constructor.name, "invalid claim: " + claim);
+    },
+    
+    TokenExpiredError: function TokenExpiredError(){
+        return new OIDCAuthentication.ResponseValidator.Error(this.constructor.name, "expired token");
     },
         
     NotYetImplemented: function NotYetImplemented(){

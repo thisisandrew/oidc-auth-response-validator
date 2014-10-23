@@ -58,8 +58,8 @@ var FIXTURE = FIXTURE || {};
     var request = {
         url: "https:\/\/saserver1\/vouch\/connect\/authorize?client_id=ssp&redirect_uri=http%3A%2F%2Fsaserver1%3A3000%2Fimplicit_flow_reponse.html&response_type=id_token%20token&scope=openid%20profile%20ssp&state=6909352776125815&nonce=13542218577036975",
         client_id: "ssp",
-        state: "6909352776125815",
-        nonce: "13542218577036975",
+        state: "5126690610410818",
+        nonce: "4838118014667956",
         response_type: "id_token token",
         oidc: oidc
     };
@@ -99,13 +99,39 @@ var FIXTURE = FIXTURE || {};
      * id_token and access_token signed with the oidc.client_certificate
      */
     var response = {};
+    
+    response.raw = "#id_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Imo5T05PRUdOdG5DcGpIZ3FxWk1GM1daSTFfSSJ9.eyJpc3MiOiJodHRwczovL3d3dy50aGlzaXNudW1lcm8uY29tL3ZvdWNoIiwiYXVkIjoic3NwIiwibmJmIjoxNDE0MDc4MTI2LCJleHAiOjE0MTQwNzg0ODYsIm5vbmNlIjoiNDgzODExODAxNDY2Nzk1NiIsImlhdCI6MTQxNDA3ODEyNiwiYXRfaGFzaCI6IjJKbndpSFVjZURrMWZxSHR3ZHhCMFEiLCJzdWIiOiJkNDRkNGUwMC1kOTE0LTQwMGEtYTk3ZC1iOWRkMGE1MGFhOWIiLCJhbXIiOiJwYXNzd29yZCIsImF1dGhfdGltZSI6MTQxNDA1MTI4NCwiaWRwIjoiaWRzcnYiLCJuYW1lIjoiRGVmYXVsdCBBZG1pbmlzdHJhdG9yIn0.oJuqcJc7p2Zazf7z8eqDcCm3_XfNVqiek3DEQcOd3xCsJCwL-TzgSRrBRjokFLh5yxg9FBYratTI3WRKV2vYpBI14D7HoXHp9qju2juHl0xiB1cOeXGB2LQLkHCKsZHwWUGaREfci62y9qgsCKe8t8gU3HU2mQtr2jGDu91m9qfrFKCZDHH-MbsPQC2a_ATl_0nDqWmOWIyb0UPPPSqykMXSak3fWMG2tsItEK6DPJbF1DYyjNzQ7O3xP3YnimABodMuPzTdSgVhUqqWohJYwrGNiWKNQgKS7GdKm35Gx1SH2wqB01fz5powzFUYIH5JxjEdk0E1QMecz3ylhL3TwQ&access_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Imo5T05PRUdOdG5DcGpIZ3FxWk1GM1daSTFfSSJ9.eyJpc3MiOiJodHRwczovL3d3dy50aGlzaXNudW1lcm8uY29tL3ZvdWNoIiwiYXVkIjoiaHR0cHM6Ly93d3cudGhpc2lzbnVtZXJvLmNvbS92b3VjaC9yZXNvdXJjZXMiLCJuYmYiOjE0MTQwNzgxMjUsImV4cCI6MTQxNDA3ODQ4NSwiY2xpZW50X2lkIjoic3NwIiwic2NvcGUiOlsib3BlbmlkIiwicHJvZmlsZSIsInNzcCJdLCJzdWIiOiJkNDRkNGUwMC1kOTE0LTQwMGEtYTk3ZC1iOWRkMGE1MGFhOWIiLCJhbXIiOiJwYXNzd29yZCIsImF1dGhfdGltZSI6MTQxNDA1MTI4NCwiaWRwIjoiaWRzcnYiLCJuYW1lIjoiRGVmYXVsdCBBZG1pbmlzdHJhdG9yIn0.FlaeSfFqGoQSkVQAWMLveiN_APydZBBMpVWEZFEhYoFa-HxExRfnxRWrwX98OHJs6qY42gPaK7LqB18IugalqNyLjEE5EYEUyTZnoHqAvgt9P-3yQ_Ms9MsquUS0T4fnhDT9GQR0qQAwbVuIXzUYP0SoF8OC9sRZ0pqp0eg7SkDATJEPS6VzWT1GeKBzlLMU62KBG_sAGSHg7TslSmw4CBV7ZC9ny9HlsAJAqIGsB1iz2iGHRwDTLbc7L5RHSONYkJFPmhP4ys_Pov5aLPQ_tnmvX_A5VMh0lTt91Hdz7x9o105aUvyD3BGL_Cd5P285-kR2cxCHQq4NW39Xbs7-OA&token_type=Bearer&expires_in=360&scope=openid%20profile%20ssp&state=5126690610410818";
+    
+    var parseResponse = function(response){
+        if (response.indexOf('#') == 0) {
+            response = response.substring(1);
+        }
+        
+        var params = {},
+            regex = /([^&=]+)=([^&]*)/g,
+            m;
+     
+        while (m = regex.exec(response)) { // jshint ignore:line
+            params[decodeURIComponent(m[1])] = decodeURIComponent(m[2]);
+        }
+     
+        for (var prop in params) {
+            return params;
+        }
+        
+        return params;
+    };
+    response = parseResponse(response.raw);
+    
+    /*
     response.id_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Imo5T05PRUdOdG5DcGpIZ3FxWk1GM1daSTFfSSJ9.eyJpc3MiOiJodHRwczovL3d3dy50aGlzaXNudW1lcm8uY29tL3ZvdWNoIiwiYXVkIjoic3NwIiwibmJmIjoxNDEyNzU2NzQyLCJleHAiOjE0MTI3NTcxMDIsIm5vbmNlIjoiMTM1NDIyMTg1NzcwMzY5NzUiLCJpYXQiOjE0MTI3NTY3NDMsImF0X2hhc2giOiJrQi13blJ1ZS1weDJUbGJiQXVKa2VnIiwic3ViIjoiZDQ0ZDRlMDAtZDkxNC00MDBhLWE5N2QtYjlkZDBhNTBhYTliIiwiYW1yIjoicGFzc3dvcmQiLCJhdXRoX3RpbWUiOjE0MTI3NTY3NDIsImlkcCI6Imlkc3J2IiwibmFtZSI6IkRlZmF1bHQgQWRtaW5pc3RyYXRvciJ9.jDerqBJAUt7AQxK1qkB-e1z_1TwL37x-75KQZY9yMVnMx3bPv_X6fV-XSeEJKOcp19jU2yOOlUCL4Ksh5RgfpeaxTcV0x2RQnbzJDBT1A7vS-G6xtGx8UubLFQi5F4KCcbnBplSABH0BUkTT2bJTJ5QuRB9DV3Dw-IcrkOeR3D6uyICx3rq8V0r_jRCgeIu3JZJugLb9O7zylOcjey7wqU-HcPsq--UFyvUEuz2v9RDhod4auQa2J2XU6LBN-n4PfAwFqFr9VrSTndN0wCoqDcSF18ljHwxWgh-GjS3td9A_oI_5XKFOk5MPEjdkAEo6u30PdyMyYZxLkfJcbmr1lw";
     response.access_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Imo5T05PRUdOdG5DcGpIZ3FxWk1GM1daSTFfSSJ9.eyJpc3MiOiJodHRwczovL3d3dy50aGlzaXNudW1lcm8uY29tL3ZvdWNoIiwiYXVkIjoiaHR0cHM6Ly93d3cudGhpc2lzbnVtZXJvLmNvbS92b3VjaC9yZXNvdXJjZXMiLCJuYmYiOjE0MTI3NTY3NDIsImV4cCI6MTQxMjc1NzEwMiwiY2xpZW50X2lkIjoic3NwIiwic2NvcGUiOlsib3BlbmlkIiwicHJvZmlsZSIsInNzcCJdLCJzdWIiOiJkNDRkNGUwMC1kOTE0LTQwMGEtYTk3ZC1iOWRkMGE1MGFhOWIiLCJhbXIiOiJwYXNzd29yZCIsImF1dGhfdGltZSI6MTQxMjc1Njc0MiwiaWRwIjoiaWRzcnYiLCJuYW1lIjoiRGVmYXVsdCBBZG1pbmlzdHJhdG9yIn0.pzxmR76YwI7HIfe2J1DYoOILUeWN1IRNXA2jt6_aQXemiQ2Lp4GOVOCgiFPyAX0ekyP_pljVV3N5yh-Lm0ULatY1jieqwWQrDV6cqYO6yz5dBST684Qp9DIViYiPMwAbVEKkpPlwBqOmxcAHzjzSXxnrkNXX2R1Tga0S-WkXKlBVw_Ukch3xWRjlFCc1Hg0naNydgipSrUbNmGc_6nrXRU_bZbOcmVWi6mVQi4oiKHNdYP6zsTOf2xt8TIl-p_qRG9BrNv7W43epx8xb1zzlA9Bpv0ytpO7dhBfy6TKdhOsPSxgle1VATXwVzwEkahkG5mashYi28gnmy61wG7r4jQ";
     response.token_type = "Bearer";
     response.expires_in = "360";
     response.scope = "openid%20profile%20ssp";
     response.state = "6909352776125815";
-
+    */
+    
     response.location_hash = function(){
         return "#id_token=" + this.id_token + "&access_token=" + this.access_token + "&token_type=" + this.token_type + "&expires_in=" + this.expires_in + "&scope=" + this.scope + "&state=" + this.state;
     };
