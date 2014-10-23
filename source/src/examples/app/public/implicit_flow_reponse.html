@@ -13,6 +13,7 @@
   <script type="text/javascript" src="src/assets/lib/jsjws.patch.js"></script>
   <script type="text/javascript" src="src/assets/oAuthClient.js"></script>
   <script type="text/javascript" src="src/assets/OIDCAuthenticationResponseValidator.js"></script>
+  <script type="text/javascript" src="src/assets/promise-6.0.0.js"></script>
 </head>
 
 <body>
@@ -37,49 +38,44 @@
 					}
 				}
 				
-			
-				OIDCAuthentication.ResponseValidatorFactory(request, location.hash).then(function(rV){
-					return rV.validate(client.certificate);
-				}).then(function(valid){
-					debugger;
-					//fulfilled
-					//Authentication Response is Valid
-					alert("Smashing");
-					//redirect to the secure resource?
-				}).catch(function(err){
-					//rejected
-					debugger;
-					
+				try {
+					var rV = new OIDCAuthentication.ResponseValidator(request, location.hash);
+					var valid = rV.validate(client.oidc.client_certificate);
+				} catch(e) {
 					localStorage.removeItem('OAuthRequestDetails'); // Clear the stored data out (stops replay attacks)
 				
 					//Did validation fail because of missing parameters
-					if (err instanceof OIDCAuthentication.ResponseValidator.Errors.MissingParameterError) {
+					if (e instanceof OIDCAuthentication.ResponseValidator.Error) {
 						//There was no request so we never made a request before...
-						if (err.parameter == "request") {
+						if (e.name == "MissingParameterError") {
 							var req = client.createImplicitFlowRequest(
 								"ssp",
-								"http://saserver1:3000/implicit_flow_reponse.html",
+								"http://" + location.hostname + ":" + location.port + "/implicit_flow_reponse.html",
 								'openid profile ssp', 'id_token token');
 							localStorage['OAuthRequestDetails'] = JSON.stringify(req);
 							window.location = req.url;	
 						}
 						
-						if (err.parameter == "response") {
-							console.log(err.stack);	
+						if (e.parameter == "response") {
+							console.log(e.stack);	
 						}
 					}
 					
-					
-					
-					console.log(err.name);
-					console.log(err.message);
-					console.log(err.stack);
-				});
-            }).catch(function(err) {
-				console.log(err);
+					console.log(e);
+				}
+				
+				if (valid) {
+					var p = $("<p>").text("It went well");
+				} else {
+					var p = $("<p>").text("It went wrong");
+				}
+				
+				$("body").append(p);
+				
+            }).catch(function(e){
+				var p = $("<p>").text("It went wrong");
+				$("body").append(p);
 			});
-            
-            
         });
 		//-->
     </script>

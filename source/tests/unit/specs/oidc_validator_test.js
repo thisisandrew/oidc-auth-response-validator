@@ -73,7 +73,7 @@ describe('OIDC Validator rejects', function(){
         var rV =  new OIDCAuthentication.ResponseValidator(request.good, response.missing_property__id_token__location_hash());
         
         try{
-            rV.validate(request.good.oidc_conf.client_certificate);
+            rV.validate(request.good.oidc.client_certificate);
         } catch(e) {
             expect(e instanceof OIDCAuthentication.ResponseValidator.Error).toBe(true);
             expect(e.name).toBe("MissingPropertyError");
@@ -84,7 +84,7 @@ describe('OIDC Validator rejects', function(){
         var rV = new OIDCAuthentication.ResponseValidator(request.good, response.missing_property__access_token__location_hash());
         
         try{
-            rV.validate(request.good.oidc_conf.client_certificate);
+            rV.validate(request.good.oidc.client_certificate);
         } catch(e) {
             expect(e instanceof OIDCAuthentication.ResponseValidator.Error).toBe(true);
             expect(e.name).toBe("MissingPropertyError");
@@ -95,7 +95,7 @@ describe('OIDC Validator rejects', function(){
         var rV = new OIDCAuthentication.ResponseValidator(request.good, response.missing_property__token_type__location_hash());
         
         try{
-            rV.validate(request.good.oidc_conf.client_certificate);
+            rV.validate(request.good.oidc.client_certificate);
         } catch(e) {
             expect(e instanceof OIDCAuthentication.ResponseValidator.Error).toBe(true);
             expect(e.name).toBe("MissingPropertyError");
@@ -106,7 +106,7 @@ describe('OIDC Validator rejects', function(){
         var rV = new OIDCAuthentication.ResponseValidator(request.good, response.missing_property__state__location_hash());
         
         try{
-            rV.validate(request.good.oidc_conf.client_certificate);
+            rV.validate(request.good.oidc.client_certificate);
         } catch(e) {
             expect(e instanceof OIDCAuthentication.ResponseValidator.Error).toBe(true);
             expect(e.name).toBe("MissingPropertyError");
@@ -123,7 +123,7 @@ describe('OIDC Validator', function(){
     var rV;
     
     beforeEach(function(){
-        rV = new OIDCAuthentication.ResponseValidator(request, response.location_hash());
+        rV = new OIDCAuthentication.ResponseValidator(request.good, response.location_hash());
     });
     
 
@@ -140,9 +140,9 @@ describe('OIDC Validator', function(){
     });
     
     it("validates the JWS Signature from the certificate (PEM)", function(){
-        var status = rV.validate(request.good.oidc_conf.client_certificate);
+        var status = rV.verifyTokenSignature(id_token, request.good.oidc.client_certificate);
         
-        expect(status.signatureVerified).toBe(true);
+        expect(status).toBe(true);
     });
     
     it("gets a payload from a token", function(){
@@ -160,63 +160,45 @@ describe('OIDC Validator Token', function(){
     var rV, token;
     
     beforeEach(function(){
-        rV = new OIDCAuthentication.ResponseValidator(request, response.location_hash());
-        token = rV.getPayload(id_token);
+        rV = new OIDCAuthentication.ResponseValidator(request.good, response.location_hash());
+        tokenPayload = rV.getPayload(id_token);
     });
     
     it("id_token matches the Issuer Identifier in the OIDC discovery against the 'iss' claim in the JWT", function(){
-        expect(request.good.oidc_conf.issuer == rV.getClaim(token, 'iss')).toBe(true);
+        expect(rV.verifyClaim(tokenPayload, "iss", request.good.oidc.conf.issuer)).toBe(true);
+       
+        tokenPayload.iss = undefined;
         
-        token.iss = undefined;
-        
-        expect(function(){
-            rV.getClaim(token, 'iss');
-        }).toThrow();
-        
-        
-        try {
-            rV.getClaim(token, 'iss');
-        } catch(e) {
-            expect(e instanceof OIDCAuthentication.ResponseValidator.Error).toBe(true);
-            expect(e.name).toBe("MissingClaimError");
-        }
-    });
-    
-    it("id_token matches the Issuer Identifier in the OIDC discovery against the 'iss' claim in the JWT", function(){
-        expect(request.good.oidc_conf.issuer == rV.getClaim(token, 'iss')).toBe(true);
-        
-        token.iss = undefined;
-        
-        expect(function(){
-            rV.getClaim(token, 'iss');
-        }).toThrow();
-        
-        
-        try {
-            rV.getClaim(token, 'iss');
-        } catch(e) {
-            expect(e instanceof OIDCAuthentication.ResponseValidator.Error).toBe(true);
-            expect(e.name).toBe("MissingClaimError");
-        }
+        expect(rV.verifyClaim(tokenPayload, "iss", request.good.oidc.conf.issuer)).toBe(false);
     });
     
     it("id_token has a valid 'aud' claim based on the client id in the request", function(){
         //TODO aud claim could be an array so this test should check if the claim is an array and the value is contained therein
-        expect(request.good.client_id == rV.getClaim(token, 'aud')).toBe(true);
-        expect(request.good.client_id == rV.getClaim(token, 'aud'))
+        expect(rV.verifyAudience(tokenPayload, request.good.client_id)).toBe(true);
+        
     });
 
-    //I have no token with multiple audiences so can't test the azp claim yet
-    xit("id_token has 'azp' claim if 'aud' claim is array and contains client_id", function(){
-        if (token.aud instanceof Array) {
-            expect(rV.getClaim(token, 'azp')).toBeDefined();
-            expect(request.good.client_id == rV.getClaim(token, 'azp'));
-        }
+    it("id_token 'exp' claim must be after the current time", function(){
+        //Out token has expired so this should be false
+        expect(rV.isTokenExpired(tokenPayload)).toBe(false);
     });
     
-    it("id_token 'exp' claim must be after the current time", function(){
-        var ts_now =  Math.floor(new Date().getTime()/ 1000); //UTC time
-        
-        expect(rV.getClaim(token, 'exp') > ts_now).toBe(true);
+    it("validates the 'nonce' claim", function(){
+        expect(rV.verifyNonce()).toBe(true);
+    });
+});
+
+describe('OIDC Validator validates', function(){
+    var request = FIXTURE.request;
+    var response = FIXTURE.response;
+    
+    var rV;
+    
+    beforeEach(function(){
+        rV = new OIDCAuthentication.ResponseValidator(request.good, response.location_hash());
+    });
+    
+    it("a good request and response", function(){
+        expect(rV.validate(request.good.oidc.conf.client_certificate)).toThrow();
     });
 });

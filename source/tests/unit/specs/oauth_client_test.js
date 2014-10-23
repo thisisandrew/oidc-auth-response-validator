@@ -4,9 +4,9 @@ describe('OAuth Client Factory', function () {
     var client;
    
     beforeEach(function() {
-        var oidc_conf = FIXTURE.request.oidc_conf; //Load OIDC conf etc from a fixture
+        var oidc = FIXTURE.request.oidc; //Load OIDC conf etc from a fixture
         
-        client = OAuthClientFactory(oidc_conf);
+        client = OAuthClientFactory(oidc);
     });
     
     it("provides an OAuth Client(client)", function() {
@@ -14,7 +14,7 @@ describe('OAuth Client Factory', function () {
     });
     
     it("client contains OIDC Discovery", function() {
-        expect(client.oidc_conf).toBeDefined();
+        expect(client.oidc.conf).toBeDefined();
     });
     
     it("client contains an authorisation server url", function(){
@@ -22,6 +22,6 @@ describe('OAuth Client Factory', function () {
     });
     
     it("client has a certificate(PEM)", function(){
-        expect(client.certificate).toBeDefined();
+        expect(client.oidc.client_certificate).toBeDefined();
     });
 });

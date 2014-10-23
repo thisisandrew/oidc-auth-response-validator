@@ -95,19 +95,9 @@ OIDCAuthentication.ResponseValidator = function(request, response){
      */
     this.validate = function(cert){
         //gets and return a status object
-        return this.flow.validate(this.response, cert);
+        return this.flow.validate(cert);
     };
 };
-
-
-//Using Promises? Use the Factory to return one.
-OIDCAuthentication.ResponseValidatorFactory = function(request, response){
-    return new Promise(function(fulfill, reject){
-        var rV = new OIDCAuthentication.ResponseValidator(request, response);
-        fulfill(rV);
-    });
-};
-
 
 OIDCAuthentication.Flows = {
     //Not yet supported
@@ -122,37 +112,65 @@ OIDCAuthentication.Flows = {
         var status = {};
         this.rV = responseValidator;
         
-        this.validate = function (response, cert) {
+        //returns true if valid or throws a meaningingful usable exception
+        this.validate = function (cert) {
             //Implicit flow requires a number of steps to check the id_token
             //http://tools.ietf.org/html/rfc6749#section-4.2.2
             
             //Check the response contains the basics
-            if(this.rV.hasProperty('state')
-               && this.rV.hasProperty('token_type')
-               && this.rV.hasProperty('id_token')
-               && this.rV.hasProperty('access_token')
-               && this.rV.verifyState()
-            ){
-                //Verify the payload of the id_token
-                var id_token_payload = this.rV.getPayload(this.rV.response.id_token);
-                if (this.rV.request.oidc_conf.issuer == this.rV.getClaim(id_token_payload, 'iss')
-                    && this.rV.request.client_id == this.rV.getClaim(id_token_payload, 'aud')
-                ) {
-                    //Let's have a stab at that JWS signature then
-                    try {
-                        if(this.rV.verifyTokenSignature(this.rV.response.id_token, cert)) {
-                            status.signatureVerified = true;
-                        } else {
-                            status.signatureVerified = false;
-                        }
-                        return status;
-                     } catch(e) {
-                        throw e;
-                     }
-                }
+            if(!this.rV.hasProperty('state')) {
+                throw new OIDCAuthentication.ResponseValidator.Errors.MissingPropertyError("state");
             }
             
-            return false;
+            if(!this.rV.hasProperty('token_type')) {
+                throw new OIDCAuthentication.ResponseValidator.Errors.MissingPropertyError("token_type");
+            }
+               
+            if(!this.rV.hasProperty('id_token')) {
+                throw new OIDCAuthentication.ResponseValidator.Errors.MissingPropertyError("id_token");
+            }
+               
+            if(!this.rV.hasProperty('access_token')) {
+                throw new OIDCAuthentication.ResponseValidator.Errors.MissingPropertyError("access_token");
+            }
+            
+            if(!this.rV.verifyState(this.rV.request.state, this.rV.response.state)) {
+                throw new OIDCAuthentication.ResponseValidator.Errors.InvalidProperty("state");
+            }
+            
+            //Get the payload of the id_token
+            var id_token_payload = this.rV.getPayload(this.rV.response.id_token);
+            
+            if(!this.rV.verifyClaim(id_token_payload, 'iss', this.rV.request.oidc.conf.issuer)) {
+                throw new OIDCAuthentication.ResponseValidator.Errors.InvalidClaimError("iss");
+            }
+            
+            if(!this.rV.verifyAudience(id_token_payload, this.rV.request.client_id)){
+                throw new OIDCAuthentication.ResponseValidator.Errors.InvalidClaimError("aud");
+            }
+            
+            if(!this.rV.isTokenExpired(id_token_payload)) {
+                throw new OIDCAuthentication.ResponseValidator.Errors.InvalidClaimError("exp");
+            }
+            
+            //Let's have a stab at that JWS signature then
+            try {
+                if(!this.rV.verifyTokenSignature(this.rV.response.id_token, cert)) {
+                    throw new OIDCAuthentication.ResponseValidator.Errors.TokenSignatureValidationError();
+                }
+            } catch(e) {
+                throw new OIDCAuthentication.ResponseValidator.Errors.TokenSignatureValidationError(e);
+            }
+            
+            if(!this.rV.verifyNonce(this.rV.request.nonce, id_token_payload)){
+                throw new OIDCAuthentication.ResponseValidator.Errors.InvalidClaimError("nonce");
+            }
+            
+            //Check the at_hash
+            //Determine the hashing algorithm
+            
+            
+            return true;
         };
     },
     
@@ -168,56 +186,105 @@ OIDCAuthentication.ResponseValidator.prototype.hasProperty = function(propertyNa
     if(this.response.hasOwnProperty(propertyName) && typeof this.response[propertyName] !== 'undefined'){
         return true;    
     } else {
-        throw new OIDCAuthentication.ResponseValidator.Errors.MissingPropertyError(propertyName);
+        return false;
+    }
+};
+
+OIDCAuthentication.ResponseValidator.prototype.verifyClaim = function(tokenPayload, claimName, claimValue){
+    //The claim could be array of values
+    if(this.getClaim(tokenPayload, claimName) instanceof Array){
+        for(i = 0; i < tokenPayload.length; i++) {
+            if(tokenPayload[i] === claimValue) {
+                return true;
+            }
+        }
+    } else {
+        if(tokenPayload[claimName] === claimValue){
+            return true;
+        }
+    }
+    
+    return false;
+};
+
+OIDCAuthentication.ResponseValidator.prototype.hasClaim = function(tokenPayload, claimName){
+    if (tokenPayload.hasOwnProperty(claimName) && typeof tokenPayload[claimName] !== 'undefined') {
+        return true;
+    } else {
+        return false;
+        //throw new OIDCAuthentication.ResponseValidator.Errors.MissingClaimError(claimName);
     }
 };
 
 OIDCAuthentication.ResponseValidator.prototype.getClaim = function(tokenPayload, claimName){
-    if (tokenPayload.hasOwnProperty(claimName) && typeof tokenPayload[claimName] !== 'undefined') {
+    if (this.hasClaim(tokenPayload, claimName)) {
         return tokenPayload[claimName];
     } else {
-        throw new OIDCAuthentication.ResponseValidator.Errors.MissingClaimError(claimName);
+        return false;
+        //throw new OIDCAuthentication.ResponseValidator.Errors.MissingClaimError(claimName);
+    }
+};
+
+OIDCAuthentication.ResponseValidator.prototype.verifyAudience = function(tokenPayload, claimValue){
+    //The aud claim must contain the client_id (could be in an array)
+    if (this.verifyClaim(tokenPayload, "aud", claimValue)) {
+        if(this.getClaim(tokenPayload, "aud") instanceof Array){
+            return this.verifyClaim(tokenPayload, 'azp', claimValue);
+        }
+        
+        return true;
     }
     
+    return false;
 };
 
-OIDCAuthentication.ResponseValidator.prototype.verifyState = function(){
-    if (this.request.state === this.response.state) {
+OIDCAuthentication.ResponseValidator.prototype.isTokenExpired = function(tokenPayload){
+    var ts_now =  Math.floor(new Date().getTime()/ 1000); //UTC time
+    
+    if(this.getClaim(tokenPayload, "exp") > ts_now) {
         return true;
     } else {
-        throw new OIDCAuthentication.ResponseValidator.Errors.InvalidProperty("state");
+        return false;
+    }
+}
+
+OIDCAuthentication.ResponseValidator.prototype.verifyState = function(request_state, response_state){
+    if (request_state === response_state) {
+        return true;
+    } else {
+        return false;
     }
 };
 
-OIDCAuthentication.ResponseValidator.prototype.verifyNonce = function(){
-    if (this.request.nonce === this.response.nonce) {
-        return true;
+OIDCAuthentication.ResponseValidator.prototype.verifyNonce = function(request_nonce, tokenPayload){
+    if (typeof request_nonce !== 'undefined'){
+        if (this.getClaim(tokenPayload, 'nonce') == request_nonce) {
+            return true;
+        }
     } else {
-        throw new OIDCAuthentication.ResponseValidator.Errors.InvalidProperty("nonce");
+        //No nonce in request so its not necessary to verify
+        return true;
     }
+    
+    return false;
 };
 
 
 //The cert is the public key from the OIDC jwks_uri endpoint at keys[0].x5c[0];
 //Token is passed in as it could be *any* token id_token, access_token, unicorn_token...
 OIDCAuthentication.ResponseValidator.prototype.verifyTokenSignature = function(token, cert){
-    try {
-        //Convert raw base64 encoded PEM to RSAKey
-        var hCert = X509.pemToHex(cert);
-        var a = X509.getPublicKeyHexArrayFromCertHex(hCert);
-        var rsa = new RSAKey();
-        rsa.setPublic(a[0], a[1]);
-        
-        result = KJUR.jws.JWS.verify(token, rsa);
-        if (result) {
-            //Signature is valid
-            return true;
-        } else {
-             return false;
-        }
-    } catch(e) {
-         throw new OIDCAuthentication.ResponseValidator.Errors.TokenSignatureValidationError(e);
-    }
+    //Convert raw base64 encoded PEM to RSAKey
+    var hCert = X509.pemToHex(cert);
+    var a = X509.getPublicKeyHexArrayFromCertHex(hCert);
+    var rsa = new RSAKey();
+    rsa.setPublic(a[0], a[1]);
+    
+    result = KJUR.jws.JWS.verify(token, rsa);
+    if (result) {
+        return true;
+    } 
+    
+    return false;
 };
 
 //Get the parsed token so we can inspect/check the payload
@@ -239,16 +306,9 @@ OIDCAuthentication.ResponseValidator.prototype.getPayload = function(token){
     return tokenPayload;
 }
 
-//Verify the salient parts of the payload
-OIDCAuthentication.ResponseValidator.prototype.verifyPayload = function(payload){
-    
-};
-
-
 /**
  * Error Types
  */
-
 OIDCAuthentication.ResponseValidator.Error = function (name, message) {
   this.name = name;
   this.message = message || 'Default Message';

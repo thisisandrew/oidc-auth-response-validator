@@ -1,7 +1,7 @@
-﻿function OAuthClient(oidc_conf) {
+﻿function OAuthClient(oidc) {
     "use strict";
-    this.url = oidc_conf.authorization_endpoint;
-    this.oidc_conf = oidc_conf;
+    this.url = oidc.conf.authorization_endpoint;
+    this.oidc = oidc;
 }
 
 OAuthClient.prototype.createImplicitFlowRequest = function (clientid, callback, scope, responseType) {
@@ -22,15 +22,17 @@ OAuthClient.prototype.createImplicitFlowRequest = function (clientid, callback, 
         "scope=" + encodeURIComponent(scope) + "&" +
         "state=" + encodeURIComponent(state) + "&" +
         "nonce=" + encodeURIComponent(nonce);
-
-    return {
+        
+    var ifr = {
         url: url,
-        client_id: client_id,
+        client_id: clientid,
         state: state,
         nonce: nonce,
         response_type: responseType,
-        oidc_conf: this.oidc_conf
+        oidc: this.oidc
     };
+
+    return ifr;
 };
 
 OAuthClient.prototype.parseResult = function (queryString) {
@@ -57,11 +59,11 @@ var OIDCDiscoveryFactory = function(authsrv_url){
     var url = authsrv_url + "/.well-known/openid-configuration";
                     
     //Get the OpenID Config Data
-    return $.get(url).then(function(data){
+    return Promise.resolve($.get(url).then(function(data){
         oidc.conf = data;
         
         return oidc;
-    });
+    }));
 };
 
 
@@ -69,19 +71,18 @@ var OIDCDiscoveryFactory = function(authsrv_url){
 var JKWSCertificateFactory = function(oidc){
     "use strict";
     
-    return $.get(oidc.conf.jwks_uri).then(
+    return Promise.resolve($.get(oidc.conf.jwks_uri).then(
         function(data){
             oidc.client_certificate = data.keys[0].x5c[0];
             return oidc;
         }
-    );    
+    ));    
 };
 
-var OAuthClientFactory = function(oidc_conf){
+var OAuthClientFactory = function(oidc){
     "use strict";
     
-    var client = new OAuthClient(oidc_conf);
-    client.certificate = oidc_conf.client_certificate;
+    var client = new OAuthClient(oidc);
     
     return client;
 };

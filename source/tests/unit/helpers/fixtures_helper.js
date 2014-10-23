@@ -7,9 +7,9 @@ var FIXTURE = FIXTURE || {};
     /**
      * An oidc configuration fixture
      */
-    var oidc_conf = {};
+    var oidc = {};
     
-    oidc_conf = {
+    oidc.conf = {
         issuer: "https://www.thisisnumero.com/vouch",
         jwks_uri: "https://saserver1/vouch/.well-known/jwks",
         authorization_endpoint: "https://saserver1/vouch/connect/authorize",
@@ -48,7 +48,7 @@ var FIXTURE = FIXTURE || {};
         id_token_signing_alg_values_supported: "RS256"
     };
     
-    oidc_conf.client_certificate = "MIIDCzCCAfegAwIBAgIQnxu3IVjoELtKf4qVckvRKTAJBgUrDgMCHQUAMBUxEzARBgNVBAMTCmlkc3J2M3Rlc3QwHhcNMTQwOTE1MTEzMTQ0WhcNMTYwOTE0MjMwMDAwWjAVMRMwEQYDVQQDEwppZHNydjN0ZXN0MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyDXZz13Cq503ek3Y82Fd2nMf5AGvR0YoHymGuGitaVvfV3Quam7jSELuqe8UFSjn8kPG6Rmm+qVSFTj70lKKn+w6qQUEOADmNzYY9MqfZKOuopswllF+uYhw7zhAb9v9XqfNWGCbRb4vIGV5GhfetIsuL6vIMRdLR1aQWeiZyz2yIaiVFKh+GyR0bIYWswvSptN5A1fRSuvqVnVYYWhhtDla/4DV1+Gr+yBt0f1zD0M0zZjX2o7Vj8gFN0gDqhSIRHq1QZ9CHEy3gpB53zeOh+rhSMdRpvNtmJ7NJpIlCtsXyO48jPFrxU6n6mt+SmeWCtO86MAgwUIVG1wdTLqVewIDAQABo18wXTATBgNVHSUEDDAKBggrBgEFBQcDAjBGBgNVHQEEPzA9gBBF9TrzBSBzqtu6JmPqM5zjoRcwFTETMBEGA1UEAxMKaWRzcnYzdGVzdIIQnxu3IVjoELtKf4qVckvRKTAJBgUrDgMCHQUAA4IBAQAdWI/r8UgKuk/IglEB9BkU4ZuowK40vfap0FH/TrHKGwTbQj3f4nT066w59a6FyLvGNoDxDd6enAlN3inV6lusK364ydEWe8wpDO2AZC3Dfh5k6qaWyVcWoOH2EA6g6fikIlEMNPHo3pDyP3551APBsvaT+Sx896Po2w1xJvgtm2lfOzhX3jZCcVXN0lDXWJM7f5TCiQ9yw6LW1aZPfRcWC3H7YRQ9ZIK2e2kqQMFBWnhwI25WtNQM/Y23zHXqE8euxmgMhzIo6TiXww1D0etFhXi/3mbtLniIcj14kNR6hrz18z6p3pw7Yl7Be5yS6Iv2a3Wj4Xah0b33O5wrrh7X";
+    oidc.client_certificate = "MIIDCzCCAfegAwIBAgIQnxu3IVjoELtKf4qVckvRKTAJBgUrDgMCHQUAMBUxEzARBgNVBAMTCmlkc3J2M3Rlc3QwHhcNMTQwOTE1MTEzMTQ0WhcNMTYwOTE0MjMwMDAwWjAVMRMwEQYDVQQDEwppZHNydjN0ZXN0MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyDXZz13Cq503ek3Y82Fd2nMf5AGvR0YoHymGuGitaVvfV3Quam7jSELuqe8UFSjn8kPG6Rmm+qVSFTj70lKKn+w6qQUEOADmNzYY9MqfZKOuopswllF+uYhw7zhAb9v9XqfNWGCbRb4vIGV5GhfetIsuL6vIMRdLR1aQWeiZyz2yIaiVFKh+GyR0bIYWswvSptN5A1fRSuvqVnVYYWhhtDla/4DV1+Gr+yBt0f1zD0M0zZjX2o7Vj8gFN0gDqhSIRHq1QZ9CHEy3gpB53zeOh+rhSMdRpvNtmJ7NJpIlCtsXyO48jPFrxU6n6mt+SmeWCtO86MAgwUIVG1wdTLqVewIDAQABo18wXTATBgNVHSUEDDAKBggrBgEFBQcDAjBGBgNVHQEEPzA9gBBF9TrzBSBzqtu6JmPqM5zjoRcwFTETMBEGA1UEAxMKaWRzcnYzdGVzdIIQnxu3IVjoELtKf4qVckvRKTAJBgUrDgMCHQUAA4IBAQAdWI/r8UgKuk/IglEB9BkU4ZuowK40vfap0FH/TrHKGwTbQj3f4nT066w59a6FyLvGNoDxDd6enAlN3inV6lusK364ydEWe8wpDO2AZC3Dfh5k6qaWyVcWoOH2EA6g6fikIlEMNPHo3pDyP3551APBsvaT+Sx896Po2w1xJvgtm2lfOzhX3jZCcVXN0lDXWJM7f5TCiQ9yw6LW1aZPfRcWC3H7YRQ9ZIK2e2kqQMFBWnhwI25WtNQM/Y23zHXqE8euxmgMhzIo6TiXww1D0etFhXi/3mbtLniIcj14kNR6hrz18z6p3pw7Yl7Be5yS6Iv2a3Wj4Xah0b33O5wrrh7X";
     //FIXTURE.oidc = oidc;
 
 
@@ -61,7 +61,7 @@ var FIXTURE = FIXTURE || {};
         state: "6909352776125815",
         nonce: "13542218577036975",
         response_type: "id_token token",
-        oidc_conf: oidc_conf
+        oidc: oidc
     };
     
     request.good = {
@@ -70,7 +70,7 @@ var FIXTURE = FIXTURE || {};
         state: request.state,
         nonce: request.nonce,
         response_type: request.response_type,
-        oidc_conf: oidc_conf
+        oidc: oidc
     };
     
     request.bad = {
@@ -79,7 +79,7 @@ var FIXTURE = FIXTURE || {};
         state: "BAD_STATE",
         nonce: "BAD_NONCE",
         response_type: "BAD_RESPONSE_TYPE",
-        oidc_conf: oidc_conf
+        oidc: oidc
     }
     FIXTURE.request = request;
 
